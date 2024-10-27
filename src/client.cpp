@@ -9,11 +9,12 @@ int main() {
     std::unique_ptr<Task1::Stub> stub;
     auto channel_ptr = grpc::CreateChannel("localhost:50052", grpc::InsecureChannelCredentials());
     stub = std::move(std::make_unique<Task1::Stub>(channel_ptr));
-    grpc::ClientContext ctx;
-    Empty request;
+
     uint64_t total = 0ll;
     int num_chunks;
     for (int i=0; i<5; i++) {
+        grpc::ClientContext ctx;
+        Empty request;
         auto start = std::chrono::system_clock::now();
         auto reader = stub->Get(&ctx, request);
         Data data;
