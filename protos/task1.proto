@@ -1,0 +1,9 @@
+message Empty {}
+
+message Data {
+    optional bytes chunk = 1;
+}
+
+service Task1 {
+    rpc Get(Empty) returns (stream Data) {}
+}
