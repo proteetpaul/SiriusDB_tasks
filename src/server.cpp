@@ -6,6 +6,7 @@
 #include <grpcpp/grpcpp.h>
 #include <absl/flags/flag.h>
 #include <absl/flags/parse.h>
+#include <thread>
 #include <cstdint>
 
 class Task1ServiceImpl: public Task1::Service {
@@ -27,6 +28,7 @@ public:
 
     grpc::Status Get(grpc::ServerContext* context, const Empty* request, 
             grpc::ServerWriter<Data>* writer) override {
+        std::cout << std::this_thread::get_id() << ": Received Get request\n";
         uint64_t i = 0ll;
         Data d;
         d.set_allocated_chunk(data_str);
