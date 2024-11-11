@@ -47,7 +47,6 @@ add_library(task1_grpc_proto
   ${task1_proto_hdrs})
 
 target_link_libraries(task1_grpc_proto
-  absl::log
   ${_REFLECTION}
   ${_GRPC_GRPCPP}
   ${_PROTOBUF_LIBPROTOBUF})
@@ -58,8 +57,7 @@ add_executable(client client.cpp)
 # message("${absl::log_initialize}")
 target_link_libraries(server 
     task1_grpc_proto
-    absl::check absl::flags absl::flags_parse 
-    absl::log
+    absl::flags absl::flags_parse 
     #  absl::log_initialize
     # absl::log_globals
     gRPC::grpc++
@@ -67,7 +65,6 @@ target_link_libraries(server
 )
 target_link_libraries(client 
     task1_grpc_proto
-    absl::check absl::flags absl::flags_parse 
-    absl::log
+    absl::flags absl::flags_parse 
     gRPC::grpc++
     protobuf) 
