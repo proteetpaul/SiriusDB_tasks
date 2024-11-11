@@ -4,6 +4,8 @@
 #include <memory>
 #include <thread>
 #include <grpcpp/grpcpp.h>
+#include <absl/flags/flag.h>
+#include <absl/flags/parse.h>
 // #include <grpc/channel.h>
 
 void connect_to_server(int *chunks, int idx) {
@@ -34,8 +36,11 @@ void connect_to_server(int *chunks, int idx) {
     }
 }
 
-int main() {
-    int num_client_threads = 4;
+ABSL_FLAG(uint64_t, num_threads, 1, "Number of client threads");
+
+int main(int argc, char **argv) {
+    absl::ParseCommandLine(argc, argv);
+    uint64_t num_client_threads = absl::GetFlag(FLAGS_num_threads);
     std::vector<std::thread> t;
     // std::vector<float> arr(num_client_threads);
     auto start = std::chrono::system_clock::now();
