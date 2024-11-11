@@ -2,20 +2,22 @@
 #include <stdio.h>
 #include <chrono>
 #include <memory>
+#include <thread>
 #include <grpcpp/grpcpp.h>
 // #include <grpc/channel.h>
 
-int main() {
+void connect_to_server(int *chunks, int idx) {
     std::unique_ptr<Task1::Stub> stub;
     auto channel_ptr = grpc::CreateChannel("localhost:50052", grpc::InsecureChannelCredentials());
     stub = std::move(std::make_unique<Task1::Stub>(channel_ptr));
 
     uint64_t total = 0ll;
+    int iter = 1;
     int num_chunks;
-    for (int i=0; i<5; i++) {
+    for (int i=0; i<iter; i++) {
         grpc::ClientContext ctx;
         Empty request;
-        auto start = std::chrono::system_clock::now();
+        // auto start = std::chrono::system_clock::now();
         auto reader = stub->Get(&ctx, request);
         Data data;
         num_chunks = 0;
@@ -23,13 +25,33 @@ int main() {
             num_chunks++;
         }
         reader->Finish();
-        auto end = std::chrono::system_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
-        total += duration.count();
+        // auto end = std::chrono::system_clock::now();
+        // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+        // total += duration.count();
+        if (!idx && !i) {
+            *chunks = num_chunks;
+        }
     }
-    
-    uint64_t total_bytes = num_chunks * 1ll * 2048;
-    float time_per_iter = total/5.0f;
-    std::cout << "Time taken: " << time_per_iter << "\n";
-    std::cout << "Bytes read: " << total_bytes << "\nThroughput: " << ((float)total_bytes/1e3)/time_per_iter << "\n";
+}
+
+int main() {
+    int num_client_threads = 4;
+    std::vector<std::thread> t;
+    // std::vector<float> arr(num_client_threads);
+    auto start = std::chrono::system_clock::now();
+    int num_chunks;
+    for (int i=0; i<num_client_threads; i++) {
+        t.push_back(std::thread(std::bind(&connect_to_server, &num_chunks, i)));
+    }
+    for (auto &thread: t) {
+        thread.join();
+    }
+    auto end = std::chrono::system_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end-start);
+    float total_latency = 0ll;
+    // for (float t: arr) total_latency += t;
+    uint64_t total_bytes = num_chunks * 1ll * 2048 * num_client_threads;
+    float throughput = (total_bytes/1e3)/(float)duration.count();
+    std::cout << "Total bytes: " << total_bytes << "\n";
+    std::cout << "Total throughput: " << throughput << " MBps\n";
 }
