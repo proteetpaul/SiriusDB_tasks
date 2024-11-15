@@ -14,16 +14,17 @@ private:
     std::vector<uint32_t> vec;
     std::string* data_str;
     uint64_t num_total_bytes;
+    uint64_t chunk_size;
 
 public:
-    Task1ServiceImpl(uint64_t num_total_bytes): num_total_bytes(num_total_bytes) {
-        int size = 2048/sizeof(uint32_t);
+    Task1ServiceImpl(uint64_t num_total_bytes, uint64_t chunk_size)
+            : num_total_bytes(num_total_bytes), chunk_size(chunk_size) {
+        int size = chunk_size/sizeof(uint32_t);
         vec.resize(size);
         for (uint32_t i=0; i<vec.size(); i++) {
             vec[i] = i;
         }
-        data_str = new std::string(reinterpret_cast<const char*>(vec.data()), 2048);
-        std::cout << data_str->size() << "\n";
+        data_str = new std::string(reinterpret_cast<const char*>(vec.data()), chunk_size);
     }
 
     grpc::Status Get(grpc::ServerContext* context, const Empty* request, 
@@ -32,7 +33,7 @@ public:
         uint64_t i = 0ll;
         Data d;
         d.set_allocated_chunk(data_str);
-        for (; i<num_total_bytes; i+=2048) {
+        for (; i<num_total_bytes; i+=chunk_size) {
             writer->Write(d);
         }
         data_str = d.release_chunk();
@@ -48,14 +49,17 @@ public:
 };
 
 ABSL_FLAG(uint64_t, num_gigs, 1, "Size of dataset in GiB");
+ABSL_FLAG(uint64_t, chunk_size, 64, "Chunk size in KB");
 
 int main(int argc, char** argv) {
     absl::ParseCommandLine(argc, argv);
     uint64_t num_gigs = absl::GetFlag(FLAGS_num_gigs);
+    uint64_t chunk_size = absl::GetFlag(FLAGS_chunk_size) * 1ll * 1024;
     uint64_t total = num_gigs * 1ll * 1<<30;
-    std::string server_address("localhost:50052");
+    std::string server_address("node-1.proteet-230925.nextgendb-pg0.utah.cloudlab.us:50052");
     std::cout << "Total bytes: " << total << "\n";
-    Task1ServiceImpl service(total);
+    std::cout << "Chunk size: " << chunk_size << "\n";
+    Task1ServiceImpl service(total, chunk_size);
 
     grpc::ServerBuilder builder;
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
